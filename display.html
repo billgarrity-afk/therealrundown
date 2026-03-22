@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Real Rundown — Live Display</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+:root {
+  --bg: #070c14;
+  --bg2: #0d1525;
+  --bg3: #111827;
+  --border: #1e293b;
+  --blue: #3b82f6;
+  --blue2: #60a5fa;
+  --text: #f1f5f9;
+  --text2: #cbd5e1;
+  --text3: #94a3b8;
+  --text4: #64748b;
+  --red: #ef4444;
+  --red2: #fca5a5;
+  --green: #4ade80;
+  --yellow: #fbbf24;
+  --purple: #a78bfa;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── LAYOUT: 3 columns ── */
+.display {
+  width: 100vw; height: 100vh;
+  display: grid;
+  grid-template-rows: 72px 1fr 56px;
+  grid-template-columns: 1fr;
+}
+
+/* ── HEADER BAR ── */
+.header {
+  background: var(--bg2);
+  border-bottom: 2px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  grid-row: 1;
+}
+
+.header-brand {
+  display: flex; align-items: center; gap: 14px;
+}
+
+.brand-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--blue);
+  animation: brandPulse 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes brandPulse {
+  0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(59,130,246,0.5); }
+  50% { opacity:0.8; box-shadow:0 0 0 10px rgba(59,130,246,0); }
+}
+
+.brand-name {
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px; font-weight: 700; letter-spacing: 3px;
+}
+
+.brand-tagline {
+  color: var(--text4);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  border-left: 1px solid var(--border);
+  padding-left: 14px; margin-left: 4px;
+}
+
+.header-center {
+  text-align: center;
+}
+
+.header-date {
+  color: var(--text3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px; letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 24px;
+}
+
+.live-badge {
+  display: flex; align-items: center; gap: 7px;
+  background: #1c0505; border: 1px solid #7f1d1d;
+  border-radius: 6px; padding: 6px 14px;
+}
+
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red);
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,100% { opacity:1; }
+  50% { opacity:0.2; }
+}
+
+.live-text {
+  color: var(--red2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+}
+
+.clock {
+  color: var(--text2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px; font-weight: 700; letter-spacing: 2px;
+  min-width: 80px; text-align: right;
+}
+
+/* ── MAIN BODY ── */
+.main {
+  display: grid;
+  grid-template-columns: 1.15fr 1px 1fr 1px 0.85fr;
+  grid-row: 2;
+  overflow: hidden;
+}
+
+.col-divider {
+  background: var(--border);
+  width: 1px;
+}
+
+/* ── COL 1: STORIES ── */
+.col-stories {
+  padding: 28px 32px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.col-label {
+  color: var(--blue);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 4px; font-weight: 700;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+
+.col-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.story-display-list {
+  display: flex; flex-direction: column; gap: 0;
+  flex: 1; overflow: hidden;
+}
+
+.story-display-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 52px;
+  gap: 12px; align-items: center;
+  padding: 11px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.4s ease;
+  opacity: 0.5;
+}
+
+.story-display-row.active {
+  background: var(--bg2);
+  border-color: var(--blue);
+  opacity: 1;
+}
+
+.story-display-row.recent {
+  opacity: 0.75;
+}
+
+.story-display-row.normal {
+  opacity: 0.4;
+}
+
+.sdr-rank {
+  text-align: center;
+}
+
+.sdr-rank-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px; font-weight: 900; line-height: 1;
+}
+
+.sdr-content {}
+
+.sdr-tags {
+  display: flex; gap: 5px; align-items: center; margin-bottom: 4px;
+}
+
+.sdr-cat {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; padding: 1px 6px; border-radius: 3px;
+  text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+}
+
+.sdr-zero {
+  background: #7c2d12; color: #fb923c;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; padding: 1px 6px; border-radius: 3px; font-weight: 700;
+}
+
+.sdr-headline {
+  color: var(--text);
+  font-size: 13px; font-weight: 600; line-height: 1.35;
+}
+
+.sdr-coverage {
+  text-align: right;
+}
+
+.sdr-cov-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; font-weight: 800; line-height: 1;
+}
+
+.sdr-cov-bar {
+  height: 2px; background: var(--border); border-radius: 1px; margin-top: 4px;
+}
+
+.sdr-cov-fill {
+  height: 100%; border-radius: 1px;
+}
+
+/* ── COL 2: SPOTLIGHT ── */
+.col-spotlight {
+  padding: 28px 32px;
+  display: flex; flex-direction: column; gap: 20px;
+  overflow: hidden;
+}
+
+.spotlight-card {
+  flex: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 26px;
+  display: flex; flex-direction: column; gap: 16px;
+  position: relative; overflow: hidden;
+  transition: all 0.6s ease;
+}
+
+.spotlight-card.zero {
+  border-color: #7f1d1d;
+  background: linear-gradient(135deg, #1c0505 0%, #0d0505 100%);
+}
+
+.spotlight-bg-num {
+  position: absolute;
+  right: -20px; bottom: -30px;
+  font-family: 'Playfair Display', serif;
+  font-size: 160px; font-weight: 900;
+  color: rgba(255,255,255,0.02);
+  line-height: 1; pointer-events: none;
+  transition: all 0.6s ease;
+}
+
+.spotlight-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.spotlight-pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: livePulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.spotlight-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 3px; font-weight: 700;
+}
+
+.spotlight-cat {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; padding: 3px 10px; border-radius: 4px;
+  text-transform: uppercase; font-weight: 700; letter-spacing: 1px;
+  align-self: flex-start;
+}
+
+.spotlight-headline {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(18px, 1.8vw, 26px);
+  font-weight: 700; line-height: 1.3;
+  color: var(--text);
+  transition: all 0.4s ease;
+}
+
+.spotlight-why {
+  color: var(--text3);
+  font-size: 13px; line-height: 1.7;
+  transition: all 0.4s ease;
+}
+
+.spotlight-ranking {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; padding: 12px 14px;
+}
+
+.spotlight-ranking-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.spotlight-ranking-text {
+  font-size: 12px; line-height: 1.65;
+}
+
+.spotlight-networks {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.spotlight-net {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 5px; border: 1px solid;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+/* ── COL 3: SCORECARD ── */
+.col-scorecard {
+  padding: 28px 28px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.scorecard-networks {
+  display: flex; flex-direction: column; gap: 14px;
+  flex: 1;
+}
+
+.sc-net-row {}
+
+.sc-net-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 7px;
+}
+
+.sc-net-name {
+  display: flex; align-items: center; gap: 9px;
+}
+
+.sc-net-dot {
+  width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+}
+
+.sc-net-label {
+  color: var(--text2);
+  font-size: 15px; font-weight: 600;
+}
+
+.sc-net-detail {
+  color: var(--text4);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; margin-left: 4px;
+}
+
+.sc-net-score {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px; font-weight: 800;
+}
+
+.sc-bar-track {
+  height: 10px; background: var(--bg3);
+  border-radius: 5px; overflow: hidden; position: relative;
+}
+
+.sc-bar-t1 {
+  position: absolute; left:0; top:0; bottom:0;
+  border-radius: 5px; transition: width 1s ease;
+}
+
+.sc-bar-t2 {
+  position: absolute; top:0; bottom:0;
+  border-radius: 5px; opacity: 0.3; transition: all 1s ease;
+}
+
+/* Summary box */
+.summary-box {
+  margin-top: 20px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+}
+
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.summary-item { text-align: center; }
+
+.summary-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 26px; font-weight: 800; line-height: 1;
+}
+
+.summary-lbl {
+  color: var(--text4);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 1px; margin-top: 3px;
+}
+
+/* ── TICKER ── */
+.ticker {
+  grid-row: 3;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  overflow: hidden; position: relative;
+}
+
+.ticker-label {
+  background: var(--blue);
+  color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  padding: 0 20px; height: 100%;
+  display: flex; align-items: center;
+  flex-shrink: 0; white-space: nowrap;
+  z-index: 2;
+}
+
+.ticker-track {
+  flex: 1; overflow: hidden; position: relative; height: 100%;
+}
+
+.ticker-inner {
+  display: flex; align-items: center; height: 100%;
+  white-space: nowrap;
+  animation: tickerScroll 60s linear infinite;
+}
+
+@keyframes tickerScroll {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+.ticker-item {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 0 40px;
+}
+
+.ticker-rank {
+  color: var(--blue);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 700;
+}
+
+.ticker-text {
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.ticker-cov {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 700;
+}
+
+.ticker-sep {
+  color: var(--border);
+  font-size: 18px; padding: 0 10px;
+}
+
+/* Progress dots */
+.progress-dots {
+  display: flex; gap: 5px; align-items: center;
+  padding: 0 16px; flex-shrink: 0;
+}
+
+.progress-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--border); transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+  background: var(--blue); transform: scale(1.3);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+</style>
+</head>
+<body>
+
+<div class="display">
+
+  <!-- ── HEADER ── -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="brand-dot"></div>
+      <span class="brand-name">THE REAL RUNDOWN</span>
+      <span class="brand-tagline">WHAT YOU ACTUALLY NEED TO KNOW</span>
+    </div>
+    <div class="header-center">
+      <div class="header-date" id="header-date"></div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        <span class="live-text">LIVE TODAY</span>
+      </div>
+      <div class="clock" id="clock"></div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+
+    <!-- COL 1: STORY LIST -->
+    <div class="col-stories">
+      <div class="col-label">TODAY'S 15 STORIES</div>
+      <div class="story-display-list" id="story-list"></div>
+    </div>
+
+    <div class="col-divider"></div>
+
+    <!-- COL 2: SPOTLIGHT -->
+    <div class="col-spotlight">
+      <div class="col-label">NOW SPOTLIGHTING</div>
+      <div class="spotlight-card" id="spotlight-card">
+        <div class="spotlight-bg-num" id="spotlight-bg-num">01</div>
+        <div class="spotlight-eyebrow">
+          <div class="spotlight-pulse" id="spotlight-pulse"></div>
+          <span class="spotlight-label" id="spotlight-label">STORY #1 — TIER 1 MUST COVER</span>
+        </div>
+        <span class="spotlight-cat" id="spotlight-cat"></span>
+        <div class="spotlight-headline" id="spotlight-headline"></div>
+        <div class="spotlight-why" id="spotlight-why"></div>
+        <div class="spotlight-ranking" id="spotlight-ranking-box">
+          <div class="spotlight-ranking-label" id="spotlight-ranking-label" style="color:var(--purple);">WHY IT RANKED HERE</div>
+          <div class="spotlight-ranking-text" id="spotlight-ranking-text" style="color:#e9d5ff;"></div>
+        </div>
+        <div class="spotlight-networks" id="spotlight-networks"></div>
+      </div>
+
+      <!-- Progress dots -->
+      <div style="display:flex;justify-content:center;align-items:center;gap:6px;" id="progress-dots"></div>
+    </div>
+
+    <div class="col-divider"></div>
+
+    <!-- COL 3: SCORECARD -->
+    <div class="col-scorecard">
+      <div class="col-label">NETWORK SCORECARD</div>
+      <div class="scorecard-networks" id="scorecard-nets"></div>
+      <div class="summary-box">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--red);" id="sum-zero"></div>
+            <div class="summary-lbl">ZERO COVERAGE</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--yellow);" id="sum-hi"></div>
+            <div class="summary-lbl">HIGH IMPACT</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--green);" id="sum-runtime"></div>
+            <div class="summary-lbl">MIN NEEDED</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--blue2);">$0</div>
+            <div class="summary-lbl">AD INFLUENCE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── TICKER ── -->
+  <div class="ticker">
+    <div class="ticker-label">TODAY'S RUNDOWN</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="ticker-inner"></div>
+    </div>
+    <div class="progress-dots" id="progress-dots-ticker"></div>
+    <div style="padding:0 20px;color:var(--text4);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;flex-shrink:0;">
+      THEREALRUNDOWN.AI
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NET_COLORS = {"CNN":"#cc0001","Fox News":"#003f88","MSNBC":"#b8860b","ABC News":"#00338d","NBC News":"#e8610c"};
+const CAT_COLORS = {"Economy":"#d97706","Legislation":"#7c3aed","Social Policy":"#db2777","Climate":"#059669","Healthcare":"#dc2626","Infrastructure":"#2563eb","Education":"#8b5cf6","Government":"#ea580c","Environment":"#0d9488","Housing":"#0891b2","Labor":"#9333ea","Foreign Policy":"#ea580c"};
+const NETWORKS = ["CNN","Fox News","MSNBC","ABC News","NBC News"];
+
+const STORIES = [
+  {id:1,rank:1,tier:1,headline:"Federal Reserve holds rates; inflation data shows mixed signals",category:"Economy",impact:"High",minutesNeeded:8,whyItMatters:"Affects 130M+ households with mortgages, credit card debt, or savings accounts.",rankingReason:"Directly affects 130M+ American households. Federal policy with immediate measurable impact on borrowing costs, savings rates, and household budgets nationwide.",coveredBy:["ABC News","NBC News"]},
+  {id:2,rank:2,tier:1,headline:"Senate bipartisan veterans healthcare expansion heads to full vote",category:"Legislation",impact:"High",minutesNeeded:7,whyItMatters:"Directly impacts 3.5M veterans and their families who currently lack VA coverage.",rankingReason:"Bipartisan legislation affecting 3.5M veterans. Rare congressional action with direct healthcare consequences for a clearly defined population.",coveredBy:["NBC News"]},
+  {id:3,rank:3,tier:1,headline:"SNAP enrollment hits 5-year high as grocery inflation persists",category:"Social Policy",impact:"High",minutesNeeded:7,whyItMatters:"43M Americans on food assistance — a 5-year high.",rankingReason:"43M Americans — 1 in 8 — now rely on food assistance. New federal data showing a 5-year high is a concrete measurable indicator of economic hardship at massive scale.",coveredBy:[]},
+  {id:4,rank:4,tier:1,headline:"NOAA confirms 14th consecutive month of record global temperatures",category:"Climate",impact:"High",minutesNeeded:6,whyItMatters:"Systemic risk to food supply, insurance markets, and coastal communities.",rankingReason:"14 consecutive record months with documented consequences for food prices, property insurance, and extreme weather costs that every American pays.",coveredBy:["CNN","MSNBC"]},
+  {id:5,rank:5,tier:1,headline:"Hospital merger study: prices up 30% with no improvement in care",category:"Healthcare",impact:"High",minutesNeeded:6,whyItMatters:"Affects every American who uses a hospital and pays health insurance.",rankingReason:"Peer-reviewed data showing a 30% price increase affecting every insured American. An accelerating trend with no regulatory brake currently in place.",coveredBy:[]},
+  {id:6,rank:6,tier:1,headline:"Supreme Court takes school funding equity case — 50M students",category:"Education",impact:"High",minutesNeeded:6,whyItMatters:"Could reshape public education funding for 50M students across every state.",rankingReason:"Supreme Court cases set precedent for decades. 50M public school students and the structural equity of American education hang on this ruling.",coveredBy:[]},
+  {id:7,rank:7,tier:1,headline:"Pentagon fails audit for 5th consecutive year; $4.1B unaccounted",category:"Government",impact:"High",minutesNeeded:6,whyItMatters:"$4.1B in taxpayer money untracked with zero political consequences.",rankingReason:"$4.1B in public funds with no accounting, repeated annually with zero consequences from the largest discretionary budget in the federal government.",coveredBy:[]},
+  {id:8,rank:8,tier:1,headline:"EPA finalizes PFAS drinking water limits affecting 100M Americans",category:"Environment",impact:"High",minutesNeeded:5,whyItMatters:"100M Americans drink water with PFAS contamination linked to cancer.",rankingReason:"100M Americans affected by a finalized federal rule on a documented public health hazard. Measurable harm, clear regulatory action, direct household impact.",coveredBy:["CNN"]},
+  {id:9,rank:9,tier:2,headline:"FAA reauthorization passes with new pilot training mandates",category:"Infrastructure",impact:"Medium",minutesNeeded:5,whyItMatters:"Air travel safety directly affects 2.5M daily passengers.",rankingReason:"Legislation affecting 2.5M daily air travelers. Near-miss incidents were underreported; this bill is the direct legislative response deserving coverage.",coveredBy:["ABC News"]},
+  {id:10,rank:10,tier:2,headline:"Small business closures up 18% year-over-year; rural areas hardest hit",category:"Economy",impact:"Medium",minutesNeeded:5,whyItMatters:"Small businesses employ 46% of the private workforce.",rankingReason:"18% YOY increase in closures affecting 46% of the private workforce. Rural community collapse is a slow-moving crisis with almost no national coverage.",coveredBy:["Fox News"]},
+  {id:11,rank:11,tier:2,headline:"HUD: Affordable housing deficit hits record 7.3M units",category:"Housing",impact:"High",minutesNeeded:5,whyItMatters:"Drives rent increases and homelessness for tens of millions of Americans.",rankingReason:"Record 7.3M unit deficit driving rent inflation and homelessness across all 50 states. Federal data confirming a worsening structural crisis.",coveredBy:[]},
+  {id:12,rank:12,tier:2,headline:"Child poverty returns to pre-pandemic levels after tax credit expiry",category:"Social Policy",impact:"High",minutesNeeded:5,whyItMatters:"11M children now living below the poverty line — a preventable policy outcome.",rankingReason:"11M children pushed back into poverty by a documented policy choice. The causal link to the credit expiration is established by Census data.",coveredBy:[]},
+  {id:13,rank:13,tier:2,headline:"Groundwater depletion accelerating across U.S. agricultural heartland",category:"Environment",impact:"Medium",minutesNeeded:4,whyItMatters:"Threatens long-term food production — irreversible once aquifers are gone.",rankingReason:"Irreversible depletion of the water supply feeding American agriculture. Catastrophic permanent consequences make it essential background coverage.",coveredBy:[]},
+  {id:14,rank:14,tier:2,headline:"DOJ expands antitrust probe into pharmacy benefit managers",category:"Healthcare",impact:"Medium",minutesNeeded:4,whyItMatters:"PBMs control drug pricing for 270M Americans with insurance.",rankingReason:"DOJ antitrust action affecting an opaque industry controlling drug pricing for 270M Americans. High public impact, near-zero public awareness.",coveredBy:["MSNBC"]},
+  {id:15,rank:15,tier:2,headline:"DOL: $274M in stolen wages recovered — under 1% prosecuted",category:"Labor",impact:"Medium",minutesNeeded:4,whyItMatters:"Wage theft costs workers more annually than all property crime combined.",rankingReason:"Wage theft exceeds all property crime in dollar terms yet receives near-zero criminal prosecution. $274M recovered is a fraction of actual losses.",coveredBy:[]},
+];
+
+let currentSpotlight = 0;
+let spotlightTimer;
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── DATE ──
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).toUpperCase();
+
+// ── STORY LIST ──
+function renderStoryList() {
+  const el = document.getElementById('story-list');
+  el.innerHTML = STORIES.map((s, i) => {
+    const cov = s.coveredBy.length;
+    const covColor = cov===0?'#ef4444':cov<3?'#fbbf24':'#4ade80';
+    const catC = CAT_COLORS[s.category]||'#6b7280';
+    const rankColor = s.tier===1?'#1d4ed8':'#374151';
+    let rowClass = 'story-display-row ';
+    if (i === currentSpotlight) rowClass += 'active';
+    else if (i === currentSpotlight - 1 || i === currentSpotlight + 1) rowClass += 'recent';
+    else rowClass += 'normal';
+    return `
+      <div class="${rowClass}" id="sdr-${i}" onclick="jumpToSpotlight(${i})">
+        <div class="sdr-rank">
+          <div class="sdr-rank-num" style="color:${rankColor};">${String(s.rank).padStart(2,'0')}</div>
+        </div>
+        <div class="sdr-content">
+          <div class="sdr-tags">
+            <span class="sdr-cat" style="background:${catC}22;color:${catC};border:1px solid ${catC}40;">${s.category}</span>
+            ${cov===0?'<span class="sdr-zero">⚠ ZERO</span>':''}
+          </div>
+          <div class="sdr-headline">${s.headline}</div>
+        </div>
+        <div class="sdr-coverage">
+          <div class="sdr-cov-num" style="color:${covColor};">${cov}/5</div>
+          <div class="sdr-cov-bar"><div class="sdr-cov-fill" style="width:${(cov/5)*100}%;background:${covColor};"></div></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── SPOTLIGHT ──
+function renderSpotlight() {
+  const s = STORIES[currentSpotlight];
+  const catC = CAT_COLORS[s.category]||'#6b7280';
+  const isZero = s.coveredBy.length === 0;
+  const card = document.getElementById('spotlight-card');
+
+  // Card style
+  card.className = 'spotlight-card' + (isZero ? ' zero' : '');
+
+  document.getElementById('spotlight-bg-num').textContent = String(s.rank).padStart(2,'0');
+
+  // Pulse color
+  const pulse = document.getElementById('spotlight-pulse');
+  pulse.style.background = isZero ? '#ef4444' : '#3b82f6';
+
+  // Label
+  document.getElementById('spotlight-label').textContent = `STORY #${s.rank} — TIER ${s.tier} ${s.tier===1?'MUST COVER':'SHOULD COVER'}`;
+  document.getElementById('spotlight-label').style.color = isZero ? '#f87171' : '#60a5fa';
+
+  // Category
+  const catEl = document.getElementById('spotlight-cat');
+  catEl.textContent = s.category;
+  catEl.style.background = catC + '25';
+  catEl.style.color = catC;
+  catEl.style.border = `1px solid ${catC}40`;
+
+  // Content
+  document.getElementById('spotlight-headline').textContent = s.headline;
+  document.getElementById('spotlight-why').textContent = s.whyItMatters;
+
+  // Ranking reason
+  const rankBox = document.getElementById('spotlight-ranking-box');
+  if (isZero) {
+    rankBox.style.background = 'rgba(239,68,68,0.08)';
+    rankBox.style.borderColor = 'rgba(239,68,68,0.2)';
+    document.getElementById('spotlight-ranking-label').style.color = '#fca5a5';
+    document.getElementById('spotlight-ranking-label').textContent = 'WHY THIS MATTERS MORE THAN WHAT AIRED';
+    document.getElementById('spotlight-ranking-text').style.color = '#fca5a5';
+  } else {
+    rankBox.style.background = 'rgba(255,255,255,0.04)';
+    rankBox.style.borderColor = 'rgba(255,255,255,0.07)';
+    document.getElementById('spotlight-ranking-label').style.color = '#c4b5fd';
+    document.getElementById('spotlight-ranking-label').textContent = 'WHY IT RANKED #' + s.rank;
+    document.getElementById('spotlight-ranking-text').style.color = '#e9d5ff';
+  }
+  document.getElementById('spotlight-ranking-text').textContent = s.rankingReason;
+
+  // Networks
+  const netsEl = document.getElementById('spotlight-networks');
+  netsEl.innerHTML = NETWORKS.map(net => {
+    const covered = s.coveredBy.includes(net);
+    return `
+      <div class="spotlight-net" style="background:${covered?'#052e16':'#1c0505'};border-color:${covered?'#166534':'#7f1d1d'};color:${covered?'#4ade80':'#f87171'};">
+        <div style="width:7px;height:7px;border-radius:50%;background:${NET_COLORS[net]};flex-shrink:0;"></div>
+        ${net.replace(' News','').replace('Fox','FOX')} ${covered?'✓':'✗'}
+      </div>`;
+  }).join('');
+
+  // Progress dots
+  const dotsEl = document.getElementById('progress-dots');
+  dotsEl.innerHTML = STORIES.map((_,i) => `
+    <div style="width:${i===currentSpotlight?'20px':'6px'};height:6px;border-radius:3px;background:${i===currentSpotlight?'var(--blue)':'var(--border)'};transition:all 0.3s ease;cursor:pointer;" onclick="jumpToSpotlight(${i})"></div>
+  `).join('');
+
+  renderStoryList();
+}
+
+// ── SCORECARD ──
+function renderScorecard() {
+  const t1 = STORIES.filter(s=>s.tier===1);
+  const t2 = STORIES.filter(s=>s.tier===2);
+  const stats = NETWORKS.map(n => ({
+    name:n,
+    t1:t1.filter(s=>s.coveredBy.includes(n)).length,
+    t2:t2.filter(s=>s.coveredBy.includes(n)).length,
+    total:STORIES.filter(s=>s.coveredBy.includes(n)).length,
+    pct:Math.round((STORIES.filter(s=>s.coveredBy.includes(n)).length/15)*100)
+  })).sort((a,b)=>b.total-a.total);
+
+  document.getElementById('scorecard-nets').innerHTML = stats.map(net => {
+    const scoreColor = net.pct>=60?'#4ade80':net.pct>=30?'#fbbf24':'#ef4444';
+    return `
+      <div class="sc-net-row">
+        <div class="sc-net-top">
+          <div class="sc-net-name">
+            <div class="sc-net-dot" style="background:${NET_COLORS[net.name]};"></div>
+            <span class="sc-net-label">${net.name}</span>
+            <span class="sc-net-detail">T1:${net.t1}/8 T2:${net.t2}/7</span>
+          </div>
+          <span class="sc-net-score" style="color:${scoreColor};">${net.total}/15</span>
+        </div>
+        <div class="sc-bar-track">
+          <div class="sc-bar-t1" style="width:${(net.t1/15)*100}%;background:${NET_COLORS[net.name]};"></div>
+          <div class="sc-bar-t2" style="left:${(net.t1/15)*100}%;width:${(net.t2/15)*100}%;background:${NET_COLORS[net.name]};"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const zero = STORIES.filter(s=>s.coveredBy.length===0).length;
+  const hi = STORIES.filter(s=>s.impact==='High').length;
+  const runtime = STORIES.reduce((s,x)=>s+x.minutesNeeded,0);
+  document.getElementById('sum-zero').textContent = zero;
+  document.getElementById('sum-hi').textContent = hi;
+  document.getElementById('sum-runtime').textContent = runtime;
+}
+
+// ── TICKER ──
+function renderTicker() {
+  document.getElementById('ticker-inner').innerHTML = STORIES.map(s => {
+    const cov = s.coveredBy.length;
+    const covColor = cov===0?'#ef4444':cov<3?'#fbbf24':'#4ade80';
+    return `
+      <div class="ticker-item">
+        <span class="ticker-rank">#${s.rank}</span>
+        <span class="ticker-text">${s.headline}</span>
+        <span class="ticker-cov" style="color:${covColor};">${cov}/5 networks</span>
+        ${cov===0?'<span style="color:#f97316;font-family:monospace;font-size:10px;font-weight:700;">⚠ ZERO COVERAGE</span>':''}
+      </div>
+      <span class="ticker-sep">·</span>`;
+  }).join('');
+}
+
+// ── AUTO-ROTATE SPOTLIGHT ──
+function startRotation() {
+  spotlightTimer = setInterval(() => {
+    currentSpotlight = (currentSpotlight + 1) % STORIES.length;
+    renderSpotlight();
+  }, 8000);
+}
+
+function jumpToSpotlight(i) {
+  clearInterval(spotlightTimer);
+  currentSpotlight = i;
+  renderSpotlight();
+  startRotation();
+}
+
+// ── INIT ──
+renderScorecard();
+renderTicker();
+renderSpotlight();
+startRotation();
+
+// Scroll active story into view
+setInterval(() => {
+  const active = document.getElementById(`sdr-${currentSpotlight}`);
+  if (active) active.scrollIntoView({behavior:'smooth', block:'nearest'});
+}, 8100);
+</script>
+</body>
+</html>
