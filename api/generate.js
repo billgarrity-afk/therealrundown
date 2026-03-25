@@ -1,4 +1,4 @@
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
   // Only allow POST
