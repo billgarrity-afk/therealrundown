@@ -793,6 +793,114 @@ function switchTab(tabId, btn) {
   if (btn) btn.classList.add('active');
 }
 
+// ── SUPABASE SAVE ──
+async function saveToSupabase(rundown) {
+  const SUPABASE_URL = 'https://jprcnkytpirqmrzzelca.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcmNua3l0cGlycW1yenplbGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjA1ODgsImV4cCI6MjA5MDAzNjU4OH0.kAKIpevx4PKM3aMD-ZE2SCU-TQs8usPAJGQtWB9-9RU';
+  if (SUPABASE_KEY === 'PASTE_YOUR_ANON_KEY_HERE') { console.warn('Add your Supabase anon key to enable archiving'); return; }
+
+  try {
+    // 1. Save the rundown record
+    const zeroCoverage = rundown.stories.filter(s => s.coveredBy.length === 0).length;
+    const highImpact = rundown.stories.filter(s => s.impact === 'High').length;
+    const totalRuntime = rundown.stories.reduce((sum, s) => sum + s.minutesNeeded, 0);
+
+    const rundownRes = await fetch(`${SUPABASE_URL}/rest/v1/rundowns`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        date: rundown.date,
+        total_stories: rundown.stories.length,
+        zero_coverage_count: zeroCoverage,
+        high_impact_count: highImpact,
+        total_runtime_minutes: totalRuntime
+      })
+    });
+
+    const rundownData = await rundownRes.json();
+    const rundownId = rundownData[0]?.id;
+    if (!rundownId) { console.error('Failed to save rundown'); return; }
+
+    // 2. Save each story
+    for (const s of rundown.stories) {
+      const storyRes = await fetch(`${SUPABASE_URL}/rest/v1/stories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          rundown_id: rundownId,
+          rank: s.rank,
+          tier: s.tier,
+          headline: s.headline,
+          summary: s.summary || '',
+          category: s.category,
+          impact: s.impact,
+          minutes_needed: s.minutesNeeded,
+          why_it_matters: s.whyItMatters,
+          ranking_reason: s.rankingReason || '',
+          covered_by_count: s.coveredBy.length
+        })
+      });
+
+      const storyData = await storyRes.json();
+      const storyId = storyData[0]?.id;
+      if (!storyId) continue;
+
+      // 3. Save network coverage for each story
+      const networks = ["CNN","Fox News","MSNBC","ABC News","NBC News"];
+      for (const network of networks) {
+        await fetch(`${SUPABASE_URL}/rest/v1/network_coverage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          },
+          body: JSON.stringify({
+            story_id: storyId,
+            rundown_id: rundownId,
+            network_name: network,
+            covered: s.coveredBy.includes(network)
+          })
+        });
+      }
+    }
+
+    console.log('✅ Rundown saved to archive — Date:', rundown.date);
+    showSaveConfirmation();
+
+  } catch(e) {
+    console.error('Supabase save error:', e);
+  }
+}
+
+function showSaveConfirmation() {
+  const existing = document.getElementById('save-confirm');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'save-confirm';
+  div.style.cssText = `
+    position:fixed; bottom:24px; right:24px; z-index:200;
+    background:#052e16; border:1px solid #166534; border-radius:8px;
+    padding:12px 18px; color:#4ade80; font-family:'IBM Plex Mono',monospace;
+    font-size:12px; font-weight:600; letter-spacing:1px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    animation: slideIn 0.3s ease;
+  `;
+  div.innerHTML = '✓ RUNDOWN SAVED TO ARCHIVE';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
 // ── GENERATE ──
 async function generateRundown() {
   const btn = document.getElementById('gen-btn');
@@ -832,6 +940,8 @@ Return exactly 15 stories.`}]
         document.getElementById('today-date').textContent = RUNDOWN.date;
         closeSidebar();
         renderAll();
+        // ── SAVE TO ARCHIVE ──
+        await saveToSupabase(parsed);
       }
     }
   } catch(e) { console.error(e); }
@@ -883,4 +993,3 @@ document.querySelectorAll('.story-row, .net-score-row').forEach(el => {
 </script>
 </body>
 </html>
-
