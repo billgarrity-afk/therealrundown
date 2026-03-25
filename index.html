@@ -116,9 +116,9 @@ nav {
 .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:32px; background:var(--bg2); }
 .stat-cell { padding:14px 16px; border-right:1px solid var(--border); }
 .stat-cell:last-child { border-right:none; }
-.stat-val { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:800; line-height:1; }
-.stat-lbl { color:var(--text5); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:1px; margin-top:3px; }
-.stat-sub { color:var(--border); font-size:10px; margin-top:1px; }
+.stat-val { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:800; line-height:1; }
+.stat-lbl { color:var(--text3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1px; margin-top:3px; }
+.stat-sub { color:var(--text4); font-size:11px; margin-top:2px; }
 
 /* Tabs */
 .tabs { display:flex; border-bottom:1px solid var(--border2); margin-bottom:28px; }
@@ -147,15 +147,15 @@ nav {
 .cat-tag { font-size:9px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.5px; padding:2px 7px; border-radius:3px; text-transform:uppercase; font-weight:700; }
 .zero-tag { background:#7c2d12; color:#fb923c; font-size:9px; font-family:'IBM Plex Mono',monospace; padding:2px 7px; border-radius:3px; font-weight:700; }
 
-.story-headline { color:var(--text); font-size:14px; font-weight:600; line-height:1.4; margin-bottom:4px; }
-.story-why { color:var(--text5); font-size:11px; line-height:1.5; }
+.story-headline { color:var(--text); font-size:16px; font-weight:600; line-height:1.45; margin-bottom:6px; }
+.story-why { color:var(--text3); font-size:13px; line-height:1.6; }
 
 .story-coverage { text-align:right; padding-top:2px; }
-.cov-num { font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:800; line-height:1; }
-.cov-label { color:var(--text5); font-size:9px; font-family:'IBM Plex Mono',monospace; margin-bottom:5px; }
-.cov-bar { height:3px; background:var(--border); border-radius:2px; }
+.cov-num { font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:800; line-height:1; }
+.cov-label { color:var(--text4); font-size:10px; font-family:'IBM Plex Mono',monospace; margin-bottom:5px; }
+.cov-bar { height:4px; background:var(--border); border-radius:2px; }
 .cov-fill { height:100%; border-radius:2px; }
-.cov-min { color:var(--text5); font-size:9px; font-family:'IBM Plex Mono',monospace; margin-top:4px; }
+.cov-min { color:var(--text4); font-size:11px; font-family:'IBM Plex Mono',monospace; margin-top:5px; }
 
 /* Scorecard tab */
 .scorecard-wrap { display:flex; flex-direction:column; gap:18px; margin-bottom:36px; }
@@ -474,14 +474,29 @@ footer { background:#060b11; border-top:1px solid var(--border2); padding:36px; 
       </div>
     </div>
 
-    <!-- Coming soon -->
-    <div style="margin-top:48px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:28px;">
-      <div style="color:#4ade80;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;font-weight:700;margin-bottom:20px;">COMING SOON</div>
+    <!-- What we've built -->
+    <div style="margin-top:48px;background:var(--bg);border:1px solid #14532d;border-radius:12px;padding:28px;">
+      <div style="color:#4ade80;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;font-weight:700;margin-bottom:20px;">✓ WHAT WE'VE BUILT</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
         <div style="display:flex;gap:10px;align-items:flex-start;">
-          <span style="font-size:20px;flex-shrink:0;">🗄️</span>
-          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Historical Archive</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Trend tracking across months and years — the dataset that changes things.</div></div>
+          <span style="font-size:20px;flex-shrink:0;">📰</span>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Daily AI Rundown</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">15 stories ranked daily by real-world impact, not fear or ratings.</div></div>
         </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0;">📊</span>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Network Scorecard</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Live accountability tracking for CNN, Fox, MSNBC, ABC, and NBC every day.</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0;">🗄️</span>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Historical Archive</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Every rundown permanently saved. The dataset that grows more powerful every day.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coming soon -->
+    <div style="margin-top:16px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:28px;">
+      <div style="color:#60a5fa;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;font-weight:700;margin-bottom:20px;">COMING SOON</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
         <div style="display:flex;gap:10px;align-items:flex-start;">
           <span style="font-size:20px;flex-shrink:0;">👥</span>
           <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Crowdsourced Logging</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Viewers help log what networks actually aired each night.</div></div>
@@ -491,16 +506,20 @@ footer { background:#060b11; border-top:1px solid var(--border2); padding:36px; 
           <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">What They Covered Instead</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Full breakdown of what filled the airtime in place of real news.</div></div>
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;">
-          <span style="font-size:20px;flex-shrink:0;">📊</span>
-          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Monthly Reports</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Accountability scorecards published every 30 days with full data.</div></div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
           <span style="font-size:20px;flex-shrink:0;">📱</span>
           <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Mobile App</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Daily push notification — the #1 buried story, every morning at 7am.</div></div>
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0;">📅</span>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Monthly Reports</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Accountability scorecards published every 30 days with full archive data.</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0;">📘</span>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Facebook Amplification Tracker</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Not just what networks covered — but what Facebook chose to amplify and spread.</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
           <span style="font-size:20px;flex-shrink:0;">🔗</span>
-          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Embed Tool</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Drop the live scorecard widget into any website — including clubhousectv.com.</div></div>
+          <div><div style="color:var(--text2);font-size:13px;font-weight:600;margin-bottom:3px;">Embed Tool</div><div style="color:var(--text4);font-size:12px;line-height:1.5;">Drop the live scorecard widget directly into any partner website.</div></div>
         </div>
       </div>
     </div>
@@ -927,6 +946,7 @@ Return ONLY valid JSON, no markdown:
 
 Include: legislation, economic data, healthcare policy, environment, education, housing, labor, government accountability.
 Exclude: celebrity, partisan drama, single-victim crime, social media controversy, fear-based stories.
+IMPORTANT: Only include ongoing stories (housing crisis, climate trends etc.) if there is significant NEW data, a NEW development, or a NEW policy action today. Do not repeat a story just because the underlying issue persists. Every story must have a fresh news hook from today.
 Return exactly 15 stories.`}]
       })
     });
