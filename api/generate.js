@@ -1,33 +1,24 @@
-export const config = { runtime: 'edge' };
+export const config = { maxDuration: 60 };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const ANTHROPIC_API_KEY = process.env.VITE_ANTHROPIC_API_KEY;
 
   if (!ANTHROPIC_API_KEY) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: 'API key not configured' });
   }
 
   try {
-    const body = await req.json();
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'interleaved-thinking-2025-05-14'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -51,19 +42,9 @@ Return exactly 15 stories. Ranks 1-8 are tier 1, ranks 9-15 are tier 2.`
     });
 
     const data = await response.json();
-
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return res.status(200).json(data);
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
