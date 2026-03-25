@@ -311,6 +311,10 @@ footer { background:#060b11; border-top:1px solid var(--border2); padding:36px; 
         <span id="gen-icon">↻</span>
         <span id="gen-label">GENERATE TODAY'S RUNDOWN</span>
       </button>
+      <button class="generate-btn" id="cov-btn" onclick="checkCoverage()" style="border-color:#059669;color:#34d399;margin-top:8px;">
+        <span id="cov-icon">📺</span>
+        <span id="cov-label">CHECK NETWORK COVERAGE</span>
+      </button>
     </div>
 
     <!-- Stats bar -->
@@ -815,7 +819,7 @@ function switchTab(tabId, btn) {
 // ── SUPABASE SAVE ──
 async function saveToSupabase(rundown) {
   const SUPABASE_URL = 'https://jprcnkytpirqmrzzelca.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcmNua3l0cGlycW1yenplbGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjA1ODgsImV4cCI6MjA5MDAzNjU4OH0.kAKIpevx4PKM3aMD-ZE2SCU-TQs8usPAJGQtWB9-9RU';
+  const SUPABASE_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
   if (SUPABASE_KEY === 'PASTE_YOUR_ANON_KEY_HERE') { console.warn('Add your Supabase anon key to enable archiving'); return; }
 
   try {
@@ -930,20 +934,21 @@ async function generateRundown() {
   label.textContent = 'SEARCHING NEWS...';
 
   try {
+    // Call our Vercel proxy instead of Anthropic directly
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ trigger: 'generate' })
     });
 
-    const data = await res.json();
-    console.log('Raw response keys:', Object.keys(data));
-    console.log('Full response:', JSON.stringify(data).substring(0, 800));
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
 
+    const data = await res.json();
     const text = data.content
       ? data.content.filter(b => b.type === 'text').map(b => b.text).join('')
-      : JSON.stringify(data);
-    console.log('Extracted text preview:', text.substring(0, 400));
+      : '';
 
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
@@ -953,6 +958,7 @@ async function generateRundown() {
         document.getElementById('today-date').textContent = RUNDOWN.date;
         closeSidebar();
         renderAll();
+        // Save to archive
         await saveToSupabase(parsed);
       }
     }
@@ -965,7 +971,51 @@ async function generateRundown() {
   label.textContent = 'GENERATE TODAY\'S RUNDOWN';
 }
 
-// ── SUBSCRIBE ──
+// ── CHECK COVERAGE ──
+async function checkCoverage() {
+  const btn = document.getElementById('cov-btn');
+  const icon = document.getElementById('cov-icon');
+  const label = document.getElementById('cov-label');
+  btn.classList.add('loading');
+  icon.textContent = '⏳';
+  label.textContent = 'CHECKING NETWORKS... (2-3 MIN)';
+
+  try {
+    const res = await fetch('/api/coverage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      console.log('Coverage check complete:', data);
+      // Show result notification
+      const existing = document.getElementById('save-confirm');
+      if (existing) existing.remove();
+      const div = document.createElement('div');
+      div.id = 'save-confirm';
+      div.style.cssText = `
+        position:fixed; bottom:24px; right:24px; z-index:200;
+        background:#052e16; border:1px solid #166534; border-radius:8px;
+        padding:14px 20px; color:#4ade80; font-family:'IBM Plex Mono',monospace;
+        font-size:12px; font-weight:600; letter-spacing:1px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.4); line-height:1.6;
+      `;
+      div.innerHTML = `✓ COVERAGE CHECK COMPLETE<br><span style="color:#94a3b8;font-size:11px;">${data.storiesChecked} stories · ${data.zeroCoverage} missed by all networks</span>`;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 6000);
+      // Reload page to show updated scorecard
+      setTimeout(() => location.reload(), 2000);
+    }
+  } catch(e) {
+    console.error('Coverage check error:', e);
+  }
+
+  btn.classList.remove('loading');
+  icon.textContent = '📺';
+  label.textContent = 'CHECK NETWORK COVERAGE';
+}
 function handleSubscribe(inputId) {
   const input = document.getElementById(inputId);
   const email = input.value.trim();
