@@ -930,21 +930,20 @@ async function generateRundown() {
   label.textContent = 'SEARCHING NEWS...';
 
   try {
-    // Call our Vercel proxy instead of Anthropic directly
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ trigger: 'generate' })
     });
 
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status}`);
-    }
-
     const data = await res.json();
+    console.log('Raw response keys:', Object.keys(data));
+    console.log('Full response:', JSON.stringify(data).substring(0, 800));
+
     const text = data.content
       ? data.content.filter(b => b.type === 'text').map(b => b.text).join('')
-      : '';
+      : JSON.stringify(data);
+    console.log('Extracted text preview:', text.substring(0, 400));
 
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
@@ -954,7 +953,6 @@ async function generateRundown() {
         document.getElementById('today-date').textContent = RUNDOWN.date;
         closeSidebar();
         renderAll();
-        // Save to archive
         await saveToSupabase(parsed);
       }
     }
