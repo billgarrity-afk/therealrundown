@@ -930,28 +930,22 @@ async function generateRundown() {
   label.textContent = 'SEARCHING NEWS...';
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages:[{role:"user",content:`You are the editor of "The Real Rundown," an independent non-partisan news show. Search for today's top news and identify the 15 most important stories for the American public — ranked by: (1) population affected, (2) policy/legislative weight, (3) public money involved, (4) measurability, (5) long-term consequence. NOT by fear, outrage, partisan angle, celebrity, or ratings.
-
-Tiers: stories 1-8 are Tier 1 MUST-COVER, stories 9-15 are Tier 2 SHOULD-COVER.
-
-Return ONLY valid JSON, no markdown:
-{"date":"full date","stories":[{"id":1,"rank":1,"tier":1,"headline":"...","summary":"2-3 sentences","category":"Economy|Legislation|Social Policy|Climate|Healthcare|Infrastructure|Education|Government|Environment|Housing|Labor|Foreign Policy","impact":"High|Medium","minutesNeeded":4-8,"whyItMatters":"one sentence with numbers","rankingReason":"Ranked #N: 2-3 sentences explaining exactly why using the rubric","coveredBy":[]}]}
-
-Include: legislation, economic data, healthcare policy, environment, education, housing, labor, government accountability.
-Exclude: celebrity, partisan drama, single-victim crime, social media controversy, fear-based stories.
-IMPORTANT: Only include ongoing stories (housing crisis, climate trends etc.) if there is significant NEW data, a NEW development, or a NEW policy action today. Do not repeat a story just because the underlying issue persists. Every story must have a fresh news hook from today.
-Return exactly 15 stories.`}]
-      })
+    // Call our Vercel proxy instead of Anthropic directly
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'generate' })
     });
+
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+
     const data = await res.json();
-    const text = data.content.filter(b => b.type==="text").map(b => b.text).join("");
+    const text = data.content
+      ? data.content.filter(b => b.type === 'text').map(b => b.text).join('')
+      : '';
+
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
       const parsed = JSON.parse(match[0]);
@@ -960,11 +954,13 @@ Return exactly 15 stories.`}]
         document.getElementById('today-date').textContent = RUNDOWN.date;
         closeSidebar();
         renderAll();
-        // ── SAVE TO ARCHIVE ──
+        // Save to archive
         await saveToSupabase(parsed);
       }
     }
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error('Generate error:', e);
+  }
 
   btn.classList.remove('loading');
   icon.className = ''; icon.textContent = '↻';
