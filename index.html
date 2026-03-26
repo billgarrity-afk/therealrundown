@@ -568,6 +568,10 @@ footer { background:#060b11; border-top:1px solid var(--border2); padding:36px; 
 
 <script>
 // ── DATA ──
+// ── SUPABASE CONFIG ── Replace with your real anon key
+const SUPABASE_URL = 'https://jprcnkytpirqmrzzelca.supabase.co';
+const SUPABASE_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
+
 const NETWORKS = ["CNN","Fox News","MSNBC","ABC News","NBC News"];
 const NET_COLORS = { "CNN":"#cc0001","Fox News":"#003f88","MSNBC":"#b8860b","ABC News":"#00338d","NBC News":"#e8610c" };
 const CAT_COLORS = { "Economy":"#d97706","Legislation":"#7c3aed","Social Policy":"#db2777","Climate":"#059669","Healthcare":"#dc2626","Infrastructure":"#2563eb","Education":"#7c3aed","Government":"#ea580c","Environment":"#0d9488","Housing":"#0891b2","Labor":"#9333ea","Foreign Policy":"#ea580c" };
@@ -608,7 +612,95 @@ let selectedStory = null;
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('today-date').textContent = RUNDOWN.date;
   renderAll();
+  // Load today's real rundown from Supabase automatically
+  loadLatestRundown();
 });
+
+// ── LOAD FROM SUPABASE ON STARTUP ──
+async function loadLatestRundown() {
+  if (SUPABASE_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcmNua3l0cGlycW1yenplbGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjA1ODgsImV4cCI6MjA5MDAzNjU4OH0.kAKIpevx4PKM3aMD-ZE2SCU-TQs8usPAJGQtWB9-9RU') return;
+
+  try {
+    // Get the most recent rundown
+    const rundownRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/rundowns?order=date_generated.desc&limit=1`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
+    const rundowns = await rundownRes.json();
+    if (!rundowns || rundowns.length === 0) return;
+
+    const rundown = rundowns[0];
+
+    // Get all stories for this rundown
+    const storiesRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/stories?rundown_id=eq.${rundown.id}&order=rank.asc`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
+    const stories = await storiesRes.json();
+    if (!stories || stories.length === 0) return;
+
+    // Get network coverage for this rundown
+    const coverageRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/network_coverage?rundown_id=eq.${rundown.id}`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
+    const coverage = await coverageRes.json();
+
+    // Map coverage data to stories
+    const mappedStories = stories.map(s => {
+      const storyCoverage = coverage
+        .filter(c => c.story_id === s.id && c.covered === true)
+        .map(c => c.network_name);
+
+      return {
+        id: s.id,
+        rank: s.rank,
+        tier: s.tier,
+        headline: s.headline,
+        summary: s.summary,
+        category: s.category,
+        impact: s.impact,
+        minutesNeeded: s.minutes_needed,
+        whyItMatters: s.why_it_matters,
+        rankingReason: s.ranking_reason,
+        coveredBy: storyCoverage
+      };
+    });
+
+    // Update the rundown with real data
+    RUNDOWN = {
+      date: rundown.date,
+      stories: mappedStories
+    };
+
+    // Update the display
+    document.getElementById('today-date').textContent = RUNDOWN.date;
+    renderAll();
+
+    console.log(`✅ Loaded rundown from archive: ${rundown.date} — ${mappedStories.length} stories`);
+
+  } catch(e) {
+    console.log('Could not load from Supabase, showing sample data:', e.message);
+  }
+}
 
 function renderAll() {
   updateStats();
@@ -810,8 +902,6 @@ function switchTab(tabId, btn) {
 
 // ── SUPABASE SAVE ──
 async function saveToSupabase(rundown) {
-  const SUPABASE_URL = 'https://jprcnkytpirqmrzzelca.supabase.co';
-  const SUPABASE_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
   if (SUPABASE_KEY === 'PASTE_YOUR_ANON_KEY_HERE') { console.warn('Add your Supabase anon key to enable archiving'); return; }
 
   try {
