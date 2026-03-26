@@ -618,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── LOAD FROM SUPABASE ON STARTUP ──
 async function loadLatestRundown() {
-  if (SUPABASE_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcmNua3l0cGlycW1yenplbGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjA1ODgsImV4cCI6MjA5MDAzNjU4OH0.kAKIpevx4PKM3aMD-ZE2SCU-TQs8usPAJGQtWB9-9RU') return;
+  if (SUPABASE_KEY === 'PASTE_YOUR_ANON_KEY_HERE') return;
 
   try {
     // Get the most recent rundown
@@ -917,7 +917,7 @@ function switchTab(tabId, btn) {
 
 // ── SUPABASE SAVE ──
 async function saveToSupabase(rundown) {
-  if (SUPABASE_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcmNua3l0cGlycW1yenplbGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjA1ODgsImV4cCI6MjA5MDAzNjU4OH0.kAKIpevx4PKM3aMD-ZE2SCU-TQs8usPAJGQtWB9-9RU') { console.warn('Add your Supabase anon key to enable archiving'); return; }
+  if (SUPABASE_KEY === 'PASTE_YOUR_ANON_KEY_HERE') { console.warn('Add your Supabase anon key to enable archiving'); return; }
 
   try {
     // 1. Save the rundown record
