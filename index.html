@@ -664,9 +664,19 @@ async function loadLatestRundown() {
 
     const coverage = await coverageRes.json();
 
+    // Helper to strip citation tags from text
+    function stripCitations(text) {
+      if (!text) return '';
+      return text
+        .replace(/]*>/gi, '')
+        .replace(/<\/antml:cite>/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
     // Map coverage data to stories
     const mappedStories = stories.map(s => {
-      const storyCoverage = coverage
+      const storyCoverage = (coverage || [])
         .filter(c => c.story_id === s.id && c.covered === true)
         .map(c => c.network_name);
 
@@ -674,16 +684,21 @@ async function loadLatestRundown() {
         id: s.id,
         rank: s.rank,
         tier: s.tier,
-        headline: s.headline,
-        summary: s.summary,
+        headline: stripCitations(s.headline),
+        summary: stripCitations(s.summary),
         category: s.category,
         impact: s.impact,
-        minutesNeeded: s.minutes_needed,
-        whyItMatters: s.why_it_matters,
-        rankingReason: s.ranking_reason,
+        minutesNeeded: s.minutes_needed || 5,
+        whyItMatters: stripCitations(s.why_it_matters),
+        rankingReason: stripCitations(s.ranking_reason),
         coveredBy: storyCoverage
       };
     });
+
+    if (mappedStories.length === 0) {
+      console.log('No stories found in archive for this rundown');
+      return;
+    }
 
     // Update the rundown with real data
     RUNDOWN = {
