@@ -1,52 +1,29 @@
 export const config = { maxDuration: 300 };
 
-// Network name mapping to GDELT station identifiers
 const NETWORK_MAP = {
   "CNN": "CNN",
   "Fox News": "FOXNEWS",
   "MSNBC": "MSNBC",
-  "ABC News": "KABC",  // ABC network
-  "NBC News": "KNBC"   // NBC network
+  "ABC News": "KABC",
+  "NBC News": "KNBC"
 };
 
-// Extract 2-3 key search terms from a headline for GDELT querying
 function extractKeyTerms(headline, category) {
-  // Remove common filler words and extract meaningful terms
   const stopWords = ['the','a','an','in','on','at','to','for','of','and','or','but','with','as','by','from','that','this','is','are','was','were','has','have','had','be','been','being','will','would','could','should','may','might','must','shall'];
-  
   const words = headline
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length > 3 && !stopWords.includes(w.toLowerCase()));
-  
-  // Take the most meaningful 3 words
-  const keyWords = words.slice(0, 3);
-  
-  // Add category context if helpful
-  const categoryTerms = {
-    'Economy': ['economy', 'economic'],
-    'Healthcare': ['healthcare', 'medical'],
-    'Climate': ['climate', 'temperature'],
-    'Government': ['government', 'federal'],
-    'Education': ['education', 'school'],
-    'Housing': ['housing', 'rent'],
-    'Labor': ['workers', 'wages'],
-    'Environment': ['environment', 'EPA'],
-  };
-  
-  return keyWords.join(' ');
+  return words.slice(0, 3).join(' ');
 }
 
-// Query GDELT TV API for a specific story across networks
 async function queryGDELT(searchTerms, date, network) {
-  // Format date for GDELT: YYYYMMDD
   const dateObj = new Date(date);
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const day = String(dateObj.getDate()).padStart(2, '0');
   const formattedDate = `${year}${month}${day}`;
-  
-  // GDELT TV API endpoint
+
   const baseUrl = 'https://api.gdeltproject.org/api/v2/tv/tv';
   const params = new URLSearchParams({
     query: searchTerms,
@@ -56,15 +33,16 @@ async function queryGDELT(searchTerms, date, network) {
     enddatetime: `${formattedDate}235959`,
     station: NETWORK_MAP[network] || network.toUpperCase().replace(' ', '')
   });
-  
+
   const url = `${baseUrl}?${params.toString()}`;
-  
+
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TheRealRundown/1.0 (therealrundown.ai)' }
     });
+
     if (!response.ok) return { covered: false, clips: 0 };
-    
+
     const text = await response.text();
     let data;
     try {
@@ -73,27 +51,23 @@ async function queryGDELT(searchTerms, date, network) {
       console.error(`GDELT non-JSON response for ${network}:`, text.slice(0, 100));
       return { covered: false, clips: 0 };
     }
-    
-    // Check if there are any results for this day
+
     const timeline = data?.timeline?.[0]?.data || [];
     const totalClips = timeline.reduce((sum, item) => sum + (item.value || 0), 0);
-    
-    // Consider covered if more than 1 clip mentions these terms
+
     return {
       covered: totalClips > 1,
       clips: totalClips
     };
-    
+
   } catch (e) {
     console.error(`GDELT query error for ${network}:`, e.message);
     return { covered: false, clips: 0 };
   }
 }
 
-// Update Supabase with coverage data
 async function updateCoverage(supabaseUrl, supabaseKey, storyId, rundownId, network, covered) {
   try {
-    // Check if record exists first
     const checkRes = await fetch(
       `${supabaseUrl}/rest/v1/network_coverage?story_id=eq.${storyId}&network_name=eq.${encodeURIComponent(network)}`,
       {
@@ -103,11 +77,10 @@ async function updateCoverage(supabaseUrl, supabaseKey, storyId, rundownId, netw
         }
       }
     );
-    
+
     const existing = await checkRes.json();
-    
+
     if (existing && existing.length > 0) {
-      // Update existing record
       await fetch(
         `${supabaseUrl}/rest/v1/network_coverage?story_id=eq.${storyId}&network_name=eq.${encodeURIComponent(network)}`,
         {
@@ -121,7 +94,6 @@ async function updateCoverage(supabaseUrl, supabaseKey, storyId, rundownId, netw
         }
       );
     } else {
-      // Insert new record
       await fetch(`${supabaseUrl}/rest/v1/network_coverage`, {
         method: 'POST',
         headers: {
@@ -155,11 +127,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Get today's rundown from Supabase
-    const today = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-
     const rundownRes = await fetch(
       `${SUPABASE_URL}/rest/v1/rundowns?order=date_generated.desc&limit=1`,
       {
@@ -181,7 +148,6 @@ export default async function handler(req, res) {
 
     console.log(`Checking coverage for rundown: ${rundownDate} (${rundownId})`);
 
-    // Step 2: Get all stories for this rundown
     const storiesRes = await fetch(
       `${SUPABASE_URL}/rest/v1/stories?rundown_id=eq.${rundownId}`,
       {
@@ -202,7 +168,6 @@ export default async function handler(req, res) {
     const networks = ["CNN", "Fox News", "MSNBC", "ABC News", "NBC News"];
     const results = [];
 
-    // Step 3: For each story, query GDELT for each network
     for (const story of stories) {
       const searchTerms = extractKeyTerms(story.headline, story.category);
       console.log(`Checking story #${story.rank}: "${searchTerms}"`);
@@ -210,13 +175,11 @@ export default async function handler(req, res) {
       const storyCoverage = { story: story.headline, rank: story.rank, networks: {} };
 
       for (const network of networks) {
-        // Small delay to be respectful of the free API
         await new Promise(r => setTimeout(r, 500));
 
         const { covered, clips } = await queryGDELT(searchTerms, rundownDate, network);
         storyCoverage.networks[network] = { covered, clips };
 
-        // Update Supabase
         await updateCoverage(SUPABASE_URL, SUPABASE_KEY, story.id, rundownId, network, covered);
 
         console.log(`  ${network}: ${covered ? '✓ COVERED' : '✗ MISSED'} (${clips} clips)`);
@@ -225,7 +188,6 @@ export default async function handler(req, res) {
       results.push(storyCoverage);
     }
 
-    // Step 4: Update zero_coverage_count on the rundown
     const zeroCoverageCount = results.filter(r =>
       Object.values(r.networks).every(n => !n.covered)
     ).length;
