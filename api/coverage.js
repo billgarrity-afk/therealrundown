@@ -1,4 +1,4 @@
-export const config = { maxDuration: 300 };
+export const config = { maxDuration: 60 };
 
 const NETWORK_MAP = {
   "CNN": "CNN",
@@ -8,7 +8,7 @@ const NETWORK_MAP = {
   "NBC News": "KNBC"
 };
 
-function extractKeyTerms(headline, category) {
+function extractKeyTerms(headline) {
   const stopWords = ['the','a','an','in','on','at','to','for','of','and','or','but','with','as','by','from','that','this','is','are','was','were','has','have','had','be','been','being','will','would','could','should','may','might','must','shall'];
   const words = headline
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -34,10 +34,8 @@ async function queryGDELT(searchTerms, date, network) {
     station: NETWORK_MAP[network] || network.toUpperCase().replace(' ', '')
   });
 
-  const url = `${baseUrl}?${params.toString()}`;
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch(`${baseUrl}?${params.toString()}`, {
       headers: { 'User-Agent': 'TheRealRundown/1.0 (therealrundown.ai)' }
     });
 
@@ -54,11 +52,7 @@ async function queryGDELT(searchTerms, date, network) {
 
     const timeline = data?.timeline?.[0]?.data || [];
     const totalClips = timeline.reduce((sum, item) => sum + (item.value || 0), 0);
-
-    return {
-      covered: totalClips > 1,
-      clips: totalClips
-    };
+    return { covered: totalClips > 1, clips: totalClips };
 
   } catch (e) {
     console.error(`GDELT query error for ${network}:`, e.message);
@@ -101,12 +95,7 @@ async function updateCoverage(supabaseUrl, supabaseKey, storyId, rundownId, netw
           'apikey': supabaseKey,
           'Authorization': `Bearer ${supabaseKey}`
         },
-        body: JSON.stringify({
-          story_id: storyId,
-          rundown_id: rundownId,
-          network_name: network,
-          covered
-        })
+        body: JSON.stringify({ story_id: storyId, rundown_id: rundownId, network_name: network, covered })
       });
     }
   } catch (e) {
@@ -166,27 +155,27 @@ export default async function handler(req, res) {
     console.log(`Found ${stories.length} stories to check`);
 
     const networks = ["CNN", "Fox News", "MSNBC", "ABC News", "NBC News"];
-    const results = [];
 
-    for (const story of stories) {
-      const searchTerms = extractKeyTerms(story.headline, story.category);
-      console.log(`Checking story #${story.rank}: "${searchTerms}"`);
-
-      const storyCoverage = { story: story.headline, rank: story.rank, networks: {} };
-
-      for (const network of networks) {
-        await new Promise(r => setTimeout(r, 500));
-
+    // Run all 75 checks in parallel
+    const allChecks = stories.flatMap(story => {
+      const searchTerms = extractKeyTerms(story.headline);
+      return networks.map(async (network) => {
         const { covered, clips } = await queryGDELT(searchTerms, rundownDate, network);
-        storyCoverage.networks[network] = { covered, clips };
-
         await updateCoverage(SUPABASE_URL, SUPABASE_KEY, story.id, rundownId, network, covered);
+        console.log(`  #${story.rank} ${network}: ${covered ? '✓' : '✗'} (${clips} clips)`);
+        return { story, network, covered, clips, searchTerms };
+      });
+    });
 
-        console.log(`  ${network}: ${covered ? '✓ COVERED' : '✗ MISSED'} (${clips} clips)`);
-      }
+    const checkResults = await Promise.all(allChecks);
 
-      results.push(storyCoverage);
-    }
+    // Reshape into per-story results
+    const results = stories.map(story => {
+      const storyChecks = checkResults.filter(r => r.story.id === story.id);
+      const networksObj = {};
+      storyChecks.forEach(r => { networksObj[r.network] = { covered: r.covered, clips: r.clips }; });
+      return { story: story.headline, rank: story.rank, networks: networksObj };
+    });
 
     const zeroCoverageCount = results.filter(r =>
       Object.values(r.networks).every(n => !n.covered)
