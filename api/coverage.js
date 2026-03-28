@@ -63,10 +63,16 @@ async function queryGDELT(searchTerms, date, network) {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TheRealRundown/1.0 (therealrundown.ai)' }
     });
-    
     if (!response.ok) return { covered: false, clips: 0 };
     
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error(`GDELT non-JSON response for ${network}:`, text.slice(0, 100));
+      return { covered: false, clips: 0 };
+    }
     
     // Check if there are any results for this day
     const timeline = data?.timeline?.[0]?.data || [];
